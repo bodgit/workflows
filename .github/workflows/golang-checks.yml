@@ -1,0 +1,84 @@
+---
+name: Golang checks
+
+on:
+  workflow_call:
+    inputs:
+      golangci_lint_version:
+        description: Version of golangci-lint to install.
+        type: string
+        required: false
+        default: latest
+      golangci_lint_args:
+        description: Extra options to pass to golangci-lint.
+        type: string
+        required: false
+        default: -v --timeout=10m
+      working_directory:
+        description: Working directory.
+        type: string
+        required: false
+      go_test_args:
+        description: Extra options to pass to go test.
+        type: string
+        required: false
+        default: -v
+
+permissions: {}
+
+jobs:
+  test:
+    name: Run tests
+    runs-on:
+      - ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up Go
+        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
+        with:
+          go-version-file: ${{ inputs.working_directory != '' && format('{0}/go.mod', inputs.working_directory) || 'go.mod' }}
+          cache-dependency-path: ${{ inputs.working_directory != '' && format('{0}/go.sum', inputs.working_directory) || 'go.sum' }}
+
+      - name: Run tests
+        shell: bash
+        working-directory: ${{ inputs.working_directory || '.' }}
+        run: |
+          go test ${{ inputs.go_test_args }} -coverprofile=cover.out ./...
+
+      - name: Send coverage
+        uses: shogo82148/actions-goveralls@25f5320d970fb565100cf1993ada29be1bb196a1 # v1.10.0
+        with:
+          path-to-profile: cover.out
+          working-directory: ${{ inputs.working_directory || '.' }}
+
+  lint:
+    name: Run lint checks
+    runs-on:
+      - ubuntu-latest
+
+    permissions:
+      contents: read
+      pull-requests: read
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up Go
+        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
+        with:
+          go-version-file: ${{ inputs.working_directory != '' && format('{0}/go.mod', inputs.working_directory) || 'go.mod' }}
+          cache-dependency-path: ${{ inputs.working_directory != '' && format('{0}/go.sum', inputs.working_directory) || 'go.sum' }}
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20 # v9.2.0
+        with:
+          version: ${{ inputs.golangci_lint_version }}
+          args: ${{ inputs.golangci_lint_args }}
+          working-directory: ${{ inputs.working_directory || '.' }}
