@@ -9,11 +9,12 @@ on:
         type: boolean
         required: false
         default: false
+    secrets:
+      RELEASE_PLEASE_TOKEN:
+        description: GitHub token used by Release Please.
+        required: true
 
-permissions:
-  contents: write
-  issues: write
-  pull-requests: write
+permissions: {}
 
 jobs:
   release-please:
@@ -25,10 +26,14 @@ jobs:
       - name: Run release-please
         uses: googleapis/release-please-action@16a9c90856f42705d54a6fda1823352bdc62cf38 # v4.4.0
         id: release
+        with:
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
 
       - name: Checkout source code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         if: ${{ steps.release.outputs.release_created && inputs.tag_major_minor_versions }}
+        with:
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
 
       - name: Tag major and minor versions
         if: ${{ steps.release.outputs.release_created && inputs.tag_major_minor_versions }}
@@ -36,7 +41,7 @@ jobs:
         run: |
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git remote add gh-token "https://${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
+          git remote add gh-token "https://${{ secrets.RELEASE_PLEASE_TOKEN }}@github.com/${{ github.repository }}.git"
           git tag -d v${{ steps.release.outputs.major }} || true
           git tag -d v${{ steps.release.outputs.major }}.${{ steps.release.outputs.minor }} || true
           git push origin :v${{ steps.release.outputs.major }} || true
