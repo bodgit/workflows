@@ -6,10 +6,7 @@ on:
     branches:
       - main
 
-permissions:
-  contents: write
-  issues: write
-  pull-requests: write
+permissions: {}
 
 jobs:
   release-please:
@@ -17,3 +14,5 @@ jobs:
     uses: ./.github/workflows/release.yml
     with:
       tag_major_minor_versions: true
+    secrets:
+      RELEASE_PLEASE_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN }}
