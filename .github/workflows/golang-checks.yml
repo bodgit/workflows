@@ -33,6 +33,7 @@ jobs:
       - ubuntu-latest
 
     permissions:
+      checks: write
       contents: read
 
     steps:
